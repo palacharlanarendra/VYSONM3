@@ -66,47 +66,111 @@ app.post("/upload", upload.single("image"), (req, res) => {
   });
 });
 
-cron.schedule("* * * * *", () => {
-  console.log("Cron: Checking for users needing thumbnail...");
+// cron.schedule("* * * * *", () => {
+//   console.log("Cron: Checking for users needing thumbnail...");
 
+//   db.all(
+//     `SELECT * FROM users WHERE image IS NOT NULL AND thumbnail IS NULL`,
+//     async (err, rows) => {
+//       if (err) return console.error("DB Error:", err);
+
+//       for (const user of rows) {
+//         try {
+//           const originalImagePath = user.image;
+
+//           // Extract filename + extension
+//           const originalName = path.basename(originalImagePath);
+//           const ext = path.extname(originalName);
+//           const name = path.basename(originalName, ext);
+
+//           // Create thumbnail path
+//           const thumbName = `${name}_thumb${ext}`;
+//           const thumbPath = `thumbnails/${thumbName}`;
+
+//           // Generate thumbnail
+//           await sharp(originalImagePath).resize(300, 300).toFile(thumbPath);
+
+//           // Update database
+//           db.run(
+//             `UPDATE users SET thumbnail = ? WHERE id = ?`,
+//             [thumbPath, user.id],
+//             (err) => {
+//               if (err) console.error("Error updating DB:", err);
+//               else console.log(`Thumbnail created for user ${user.id}`);
+//             }
+//           );
+//         } catch (error) {
+//           console.error("Error generating thumbnail:", error);
+//         }
+//       }
+//     }
+//   );
+// });
+
+let queue = [];
+
+app.post("/enqueue", (req, res) => {
   db.all(
-    `SELECT * FROM users WHERE image IS NOT NULL AND thumbnail IS NULL`,
-    async (err, rows) => {
-      if (err) return console.error("DB Error:", err);
+    "SELECT * FROM users WHERE image IS NOT NULL AND thumbnail IS NULL",
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
 
-      for (const user of rows) {
-        try {
-          const originalImagePath = user.image;
-
-          // Extract filename + extension
-          const originalName = path.basename(originalImagePath);
-          const ext = path.extname(originalName);
-          const name = path.basename(originalName, ext);
-
-          // Create thumbnail path
-          const thumbName = `${name}_thumb${ext}`;
-          const thumbPath = `thumbnails/${thumbName}`;
-
-          // Generate thumbnail
-          await sharp(originalImagePath).resize(300, 300).toFile(thumbPath);
-
-          // Update database
-          db.run(
-            `UPDATE users SET thumbnail = ? WHERE id = ?`,
-            [thumbPath, user.id],
-            (err) => {
-              if (err) console.error("Error updating DB:", err);
-              else console.log(`Thumbnail created for user ${user.id}`);
-            }
-          );
-        } catch (error) {
-          console.error("Error generating thumbnail:", error);
-        }
+      if (rows.length === 0) {
+        return res.json({ status: "nothing_to_queue" });
       }
+
+      rows.forEach((user) => {
+        queue.push({
+          userId: user.id,
+          imagePath: user.image,
+          addedAt: Date.now(),
+        });
+        console.log(`Task queued for user ${user.id}`);
+      });
+
+      return res.json({
+        status: "queued_all",
+        count: rows.length,
+      });
     }
   );
 });
 
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
-});
+async function worker() {
+  if (queue.length === 0) {
+    return setTimeout(worker, 1000);
+  }
+
+  const task = queue.shift();
+  console.log(`Worker picked task for user ${task.userId}`);
+
+  try {
+    const ext = path.extname(task.imagePath);
+    const base = path.basename(task.imagePath, ext);
+    const thumbPath = `thumbnails/${base}_thumb${ext}`;
+
+    await sharp(task.imagePath).resize(300, 300).toFile(thumbPath);
+
+    db.run(
+      `UPDATE users SET thumbnail = ? WHERE id = ?`,
+      [thumbPath, task.userId],
+      (err) => {
+        if (err) console.error("DB update error:", err);
+        else console.log(`Thumbnail generated for user ${task.userId}`);
+      }
+    );
+  } catch (error) {
+    console.error("Error processing task:", error);
+  }
+
+  setImmediate(worker);
+}
+// worker();
+
+if (require.main === module) {
+  app.listen(3000, () => {
+    console.log("Server running on port 3000");
+  });
+}
+
+module.exports = app;
