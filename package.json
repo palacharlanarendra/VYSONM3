@@ -20,9 +20,11 @@
   },
   "homepage": "https://github.com/palacharlanarendra/VYSONM3#readme",
   "dependencies": {
+    "amqplib": "^0.10.9",
     "axios": "^1.13.2",
     "bullmq": "^5.66.2",
     "express": "^5.1.0",
+    "kafkajs": "^2.2.4",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "redis": "^5.10.0",
