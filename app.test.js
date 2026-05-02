@@ -49,7 +49,7 @@ describe("Queue Thumbnail System Tests", () => {
       () => {
         request(app)
           .post("/enqueue")
-          .end((err: Error, res: any) => {
+          .end((err, res) => {
             expect(res.body.status).toBe("queued_all");
             expect(res.body.count).toBe(1);
             done();
