@@ -1,7 +1,6 @@
 const request = require("supertest");
 const sqlite3 = require("sqlite3").verbose();
 const fs = require("fs");
-const path = require("path");
 const app = require("./index.js");
 
 const db = new sqlite3.Database("./mydb.sqlite");

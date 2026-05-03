@@ -27,6 +27,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "jest": "^30.2.0",
     "supertest": "^7.1.4"
   }

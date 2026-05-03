@@ -2,7 +2,6 @@ const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database("./mydb.sqlite");
 const multer = require("multer");
-const cron = require("node-cron");
 const sharp = require("sharp");
 const path = require("path");
 
@@ -138,6 +137,7 @@ app.post("/enqueue", (req, res) => {
   );
 });
 
+// eslint-disable-next-line no-unused-vars
 async function worker() {
   if (queue.length === 0) {
     return setTimeout(worker, 1000);

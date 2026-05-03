@@ -71,6 +71,7 @@ sequelize.sync().then(async () => {
     await Product.create({ name: "Widget", price: 19.99, stock: 100 });
 });
 
+// eslint-disable-next-line no-unused-vars
 function charge(amount, method) {
   return new Promise((resolve) =>
     setTimeout(() => resolve({ ok: true, txnId: "txn_" + Date.now() }), 100)
