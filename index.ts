@@ -1,9 +1,11 @@
-const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
-const db = new sqlite3.Database("./mydb.sqlite");
-const multer = require("multer");
-const sharp = require("sharp");
-const path = require("path");
+import express, { Request, Response } from "express";
+import sqlite3 from "sqlite3";
+import multer from "multer";
+import sharp from "sharp";
+import path from "path";
+
+const sqlite3Verbose = sqlite3.verbose();
+const db = new sqlite3Verbose.Database("./mydb.sqlite");
 
 const app = express();
 app.use(express.json());
@@ -18,11 +20,9 @@ const storage = multer.diskStorage({
   },
 });
 
-
-
 const upload = multer({ storage: storage });
 
-app.post("/sync", async (req, res) => {
+app.post("/sync", async (req: Request, res: Response) => {
   console.log("Sync start:", new Date().toISOString());
 
   // simulate slow blocking task
@@ -33,7 +33,7 @@ app.post("/sync", async (req, res) => {
   return res.json({ status: "success" });
 });
 
-app.post("/async", (req, res) => {
+app.post("/async", (req: Request, res: Response) => {
   console.log("Async start:", new Date().toISOString());
 
   new Promise((resolve) =>
@@ -45,7 +45,7 @@ app.post("/async", (req, res) => {
   return res.json({ status: "accepted" });
 });
 
-app.post("/upload", upload.single("image"), (req, res) => {
+app.post("/upload", upload.single("image"), (req: Request, res: Response) => {
   if (!req.file) {
     return res.status(400).json({ error: "No image uploaded" });
   }
@@ -67,50 +67,9 @@ app.post("/upload", upload.single("image"), (req, res) => {
   });
 });
 
-// cron.schedule("* * * * *", () => {
-//   console.log("Cron: Checking for users needing thumbnail...");
+let queue: any[] = [];
 
-//   db.all(
-//     `SELECT * FROM users WHERE image IS NOT NULL AND thumbnail IS NULL`,
-//     async (err, rows) => {
-//       if (err) return console.error("DB Error:", err);
-
-//       for (const user of rows) {
-//         try {
-//           const originalImagePath = user.image;
-
-//           // Extract filename + extension
-//           const originalName = path.basename(originalImagePath);
-//           const ext = path.extname(originalName);
-//           const name = path.basename(originalName, ext);
-
-//           // Create thumbnail path
-//           const thumbName = `${name}_thumb${ext}`;
-//           const thumbPath = `thumbnails/${thumbName}`;
-
-//           // Generate thumbnail
-//           await sharp(originalImagePath).resize(300, 300).toFile(thumbPath);
-
-//           // Update database
-//           db.run(
-//             `UPDATE users SET thumbnail = ? WHERE id = ?`,
-//             [thumbPath, user.id],
-//             (err) => {
-//               if (err) console.error("Error updating DB:", err);
-//               else console.log(`Thumbnail created for user ${user.id}`);
-//             }
-//           );
-//         } catch (error) {
-//           console.error("Error generating thumbnail:", error);
-//         }
-//       }
-//     }
-//   );
-// });
-
-let queue = [];
-
-app.post("/enqueue", (req, res) => {
+app.post("/enqueue", (req: Request, res: Response) => {
   db.all(
     "SELECT * FROM users WHERE image IS NOT NULL AND thumbnail IS NULL",
     (err, rows) => {
@@ -120,7 +79,7 @@ app.post("/enqueue", (req, res) => {
         return res.json({ status: "nothing_to_queue" });
       }
 
-      rows.forEach((user) => {
+      rows.forEach((user: any) => {
         queue.push({
           userId: user.id,
           imagePath: user.image,
@@ -137,7 +96,7 @@ app.post("/enqueue", (req, res) => {
   );
 });
 
-// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function worker() {
   if (queue.length === 0) {
     return setTimeout(worker, 1000);
@@ -167,7 +126,6 @@ async function worker() {
 
   setImmediate(worker);
 }
-// worker();
 
 if (require.main === module) {
   app.listen(3000, () => {
@@ -175,4 +133,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = app;
+export default app;

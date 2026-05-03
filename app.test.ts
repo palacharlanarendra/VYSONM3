@@ -1,9 +1,10 @@
-const request = require("supertest");
-const sqlite3 = require("sqlite3").verbose();
-const fs = require("fs");
-const app = require("./index.js");
+import request from "supertest";
+import sqlite3 from "sqlite3";
+import fs from "fs";
+import app from "./index";
 
-const db = new sqlite3.Database("./mydb.sqlite");
+const sqlite3Verbose = sqlite3.verbose();
+const db = new sqlite3Verbose.Database("./mydb.sqlite");
 
 describe("Queue Thumbnail System Tests", () => {
   beforeAll(() => {

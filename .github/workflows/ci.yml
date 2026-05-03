@@ -29,6 +29,8 @@ jobs:
       if: steps.cache-node-modules.outputs.cache-hit != 'true'
       run: npm ci
     - name: Run ESLint
-      run: npx eslint .
+      run: npx eslint . --ext .ts
+    - name: Build
+      run: npm run build
     - name: Run tests
       run: npm test
