@@ -67,6 +67,7 @@ app.post("/upload", upload.single("image"), (req: Request, res: Response) => {
   });
 });
 
+// eslint-disable-next-line prefer-const
 let queue: any[] = [];
 
 app.post("/enqueue", (req: Request, res: Response) => {
