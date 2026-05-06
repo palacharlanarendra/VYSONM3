@@ -16,6 +16,12 @@ describe("Queue Thumbnail System Tests", () => {
     db.run("DELETE FROM users", done);
   });
 
+  test("GET /health returns ok", async () => {
+    const res = await request(app).get("/health");
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("ok");
+  });
+
   test("POST /sync waits ~3s", async () => {
     const start = Date.now();
     const res = await request(app).post("/sync");

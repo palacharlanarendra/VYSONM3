@@ -10,6 +10,10 @@ const db = new sqlite3Verbose.Database("./mydb.sqlite");
 const app = express();
 app.use(express.json());
 
+app.get("/health", (req: Request, res: Response) => {
+  return res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "./uploads");
