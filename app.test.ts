@@ -33,7 +33,8 @@ describe("Queue Thumbnail System Tests", () => {
   });
 
   test("POST /upload saves image and inserts db row", async () => {
-    fs.writeFileSync("./uploads/test.png", "dummy");
+    const base64Image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    fs.writeFileSync("./uploads/test.png", Buffer.from(base64Image, "base64"));
     const res = await request(app)
       .post("/upload")
       .attach("image", "./uploads/test.png");
@@ -42,18 +43,52 @@ describe("Queue Thumbnail System Tests", () => {
     expect(fs.existsSync(res.body.image)).toBe(true);
   });
 
+  test("POST /upload fails if no image is attached", async () => {
+    const res = await request(app).post("/upload");
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("No image uploaded");
+  });
+
+  test("POST /enqueue returns nothing_to_queue when db is empty", async () => {
+    const res = await request(app).post("/enqueue");
+    expect(res.body.status).toBe("nothing_to_queue");
+  });
+
   test("POST /enqueue queues tasks", (done) => {
     db.run(
       `INSERT INTO users (image, thumbnail) VALUES (?, NULL)`,
       ["uploads/test.png"],
-      () => {
-        request(app)
-          .post("/enqueue")
-          .end((err, res) => {
-            expect(res.body.status).toBe("queued_all");
-            expect(res.body.count).toBe(1);
-            done();
-          });
+      async () => {
+        const res = await request(app).post("/enqueue");
+        expect(res.body.status).toBe("queued_all");
+        expect(res.body.count).toBe(1);
+        done();
+      }
+    );
+  });
+
+  test("Worker processes queued tasks and updates DB", (done) => {
+    // 1. Insert a mock user
+    db.run(
+      `INSERT INTO users (image, thumbnail) VALUES (?, NULL)`,
+      ["uploads/test.png"],
+      async function () {
+        const userId = this.lastID;
+        // 2. Enqueue the task
+        await request(app).post("/enqueue");
+
+        // 3. Wait for worker to process (worker runs every 1s or on setImmediate)
+        setTimeout(() => {
+          db.get(
+            "SELECT thumbnail FROM users WHERE id = ?",
+            [userId],
+            (err, row: any) => {
+              expect(row.thumbnail).not.toBeNull();
+              expect(row.thumbnail).toContain("thumbnails/test_thumb");
+              done();
+            }
+          );
+        }, 2000);
       }
     );
   });

@@ -32,5 +32,5 @@ jobs:
       run: npx eslint . --ext .ts
     - name: Build
       run: npm run build
-    - name: Run tests
-      run: npm test
+    - name: Run Tests and Check Coverage
+      run: npm run test:coverage

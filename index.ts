@@ -134,4 +134,7 @@ if (require.main === module) {
   });
 }
 
+// Start the worker
+worker();
+
 export default app;
