@@ -1,0 +1,50 @@
+{
+  "name": "vysonm3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --forceExit",
+    "test:coverage": "jest --coverage --forceExit",
+    "start": "node dist/index.js",
+    "order:start": "node dist/order_management/app.js",
+    "dev": "ts-node index.ts",
+    "order:dev": "ts-node order_management/app.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/palacharlanarendra/VYSONM3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/palacharlanarendra/VYSONM3/issues"
+  },
+  "homepage": "https://github.com/palacharlanarendra/VYSONM3#readme",
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "sequelize": "^6.37.8",
+    "sharp": "^0.34.5",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jest": "^30.0.0",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^25.6.0",
+    "@types/sqlite3": "^5.1.0",
+    "@types/supertest": "^7.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "eslint": "^8.57.1",
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}
