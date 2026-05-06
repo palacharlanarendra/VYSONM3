@@ -12,6 +12,9 @@ const sqlite3Verbose = sqlite3_1.default.verbose();
 const db = new sqlite3Verbose.Database("./mydb.sqlite");
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+app.get("/health", (req, res) => {
+    return res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 const storage = multer_1.default.diskStorage({
     destination: function (req, file, cb) {
         cb(null, "./uploads");
@@ -53,6 +56,7 @@ app.post("/upload", upload.single("image"), (req, res) => {
         });
     });
 });
+// eslint-disable-next-line prefer-const
 let queue = [];
 app.post("/enqueue", (req, res) => {
     db.all("SELECT * FROM users WHERE image IS NOT NULL AND thumbnail IS NULL", (err, rows) => {
@@ -104,4 +108,6 @@ if (require.main === module) {
         console.log("Server running on port 3000");
     });
 }
+// Start the worker
+worker();
 exports.default = app;
