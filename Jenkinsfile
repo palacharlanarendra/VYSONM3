@@ -1,10 +1,8 @@
 pipeline {
-    agent any
-
-    // This requires the NodeJS plugin to be installed in Jenkins
-    // and a global tool configuration named 'node' to be set up.
-    tools {
-        nodejs 'node'
+    agent {
+        docker {
+            image 'node:20'
+        }
     }
 
     environment {
@@ -15,18 +13,20 @@ pipeline {
         stage('Check Skip CI') {
             steps {
                 script {
-                    // Fetch the latest commit message
-                    def commitMessage = sh(returnStdout: true, script: 'git log -1 --pretty=%B').trim()
-                    
-                    // Check for standard skip CI flags
-                    if (commitMessage.contains('[skip ci]') || 
-                        commitMessage.contains('[ci skip]') || 
-                        commitMessage.contains('[no ci]') || 
-                        commitMessage.contains('[skip actions]') || 
-                        commitMessage.contains('[actions skip]')) {
-                        
+                    def commitMessage = sh(
+                        returnStdout: true,
+                        script: 'git log -1 --pretty=%B'
+                    ).trim()
+
+                    if (
+                        commitMessage.contains('[skip ci]') ||
+                        commitMessage.contains('[ci skip]') ||
+                        commitMessage.contains('[no ci]') ||
+                        commitMessage.contains('[skip actions]') ||
+                        commitMessage.contains('[actions skip]')
+                    ) {
                         currentBuild.result = 'NOT_BUILT'
-                        error('Skipping build due to [skip ci] in commit message')
+                        error('Skipping build due to skip ci flag')
                     }
                 }
             }
@@ -34,8 +34,6 @@ pipeline {
 
         stage('Setup') {
             steps {
-                // Ensure Node.js and npm are available
-                // Note: Jenkins often uses the NodeJS plugin to inject these into the PATH.
                 sh 'node --version'
                 sh 'npm --version'
             }
@@ -43,8 +41,6 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Jenkins does not have an out-of-the-box caching step like GitHub Actions.
-                // Dependency caching requires additional plugins (e.g., Job Cacher) or custom scripting.
                 sh 'npm ci'
             }
         }
@@ -72,8 +68,9 @@ pipeline {
         success {
             echo 'Pipeline successfully completed!'
         }
+
         failure {
-            echo 'Pipeline failed. Please check the logs.'
+            echo 'Pipeline failed. Please check logs.'
         }
     }
 }
