@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    // This requires the NodeJS plugin to be installed in Jenkins
+    // and a global tool configuration named 'node' to be set up.
+    tools {
+        nodejs 'node'
+    }
+
     environment {
         CI = 'true'
     }
