@@ -8,7 +8,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x, 20.x, 22.x]
     
     # Required permissions to post comments on Pull Requests
     permissions:
@@ -18,19 +22,19 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Use Node.js latest
+    - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
-        node-version: 'latest'
+        node-version: ${{ matrix.node-version }}
 
     - name: Cache node modules
       id: cache-node-modules
       uses: actions/cache@v4
       with:
         path: node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-node-
+          ${{ runner.os }}-node-${{ matrix.node-version }}-
 
     - name: Install dependencies
       if: steps.cache-node-modules.outputs.cache-hit != 'true'
@@ -43,14 +47,53 @@ jobs:
       run: npm run build
 
     - name: Jest Coverage Comment
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
       uses: ArtiomTr/jest-coverage-report-action@v2
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         test-script: npm run test:coverage
         annotations: failed-tests
 
-    - name: Run Tests (Push Events)
-      if: github.event_name == 'push'
+    - name: Run Tests (Push Events and Other Matrices)
+      if: github.event_name == 'push' || matrix.os != 'ubuntu-latest' || matrix.node-version != '22.x'
       run: npm run test:coverage
 
+    - name: Deploy to Vercel Preview
+      if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        github-comment: true
+
+    - name: Deploy to Vercel Production
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+
+    - name: CodeRabbit AI PR Reviewer
+      if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.node-version == '22.x'
+      uses: coderabbitai/ai-pr-reviewer@latest
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      with:
+        debug: false
+        review_simple_changes: false
+        review_comment_lgtm: false
+
+    - name: Send Slack Notification on Failure
+      if: failure()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_COLOR: danger
+        SLACK_TITLE: 'CI Pipeline Failed'
+        SLACK_MESSAGE: 'The GitHub Actions workflow has failed for ${{ github.repository }}. Please check the logs.'

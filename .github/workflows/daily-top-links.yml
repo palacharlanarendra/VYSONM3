@@ -1,0 +1,47 @@
+name: Daily Top Links Cron
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # Runs daily at 9:00 AM UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  compute-and-share-top-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'latest'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compute Top Links
+        id: compute
+        run: |
+          # Replace this with your actual script to compute top links
+          # For example: npm run compute-top-links > result.txt
+          
+          # Placeholder generation
+          echo "1. https://example.com/a - 1000 clicks" > result.txt
+          echo "2. https://example.com/b - 850 clicks" >> result.txt
+          echo "3. https://example.com/c - 400 clicks" >> result.txt
+          
+          # Load output into an environment variable to pass to Slack
+          {
+            echo 'TOP_LINKS<<EOF'
+            cat result.txt
+            echo EOF
+          } >> "$GITHUB_ENV"
+
+      - name: Share on Slack
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: 'good'
+          SLACK_TITLE: 'Daily Top Links'
+          SLACK_MESSAGE: "Here are the most popular links for today:\n${{ env.TOP_LINKS }}"
